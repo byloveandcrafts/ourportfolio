@@ -270,11 +270,18 @@
       .wrap { padding:0 1.2rem; }
       .sec-pad,.sec-pad-alt { padding:50px 0; }
       .sec-head { margin-bottom:2rem; }
+      .team-grid { grid-template-columns:1fr; }
       .services-grid,.port-grid,.video-grid { grid-template-columns:1fr; }
+      .pricing-grid { grid-template-columns:1fr; }
+      .addons-wrapper { grid-template-columns:1fr; }
       .contact-links { flex-direction:column; align-items:center; }
       .contact-link { width:100%; max-width:250px; justify-content:center; }
       .music-bar { right:12px; bottom:12px; }
       .music-title,.music-status { display:none; }
+      /* Hide glass note on mobile to prevent overlap */
+      .glass-note { display:none; }
+      /* Fix marquee overflow on mobile */
+      .marquee-wrap { transform:none; }
     }
 
     /* PRICING & PACKAGES */
@@ -848,9 +855,9 @@
     <h2 class="reveal">Ready to Create <em>Something Beautiful?</em></h2>
     <p class="sub reveal">Let's craft your perfect digital invitation — reach out and let's talk.</p>
     <div class="contact-links reveal">
-      <<a href="mailto:loveandcraftsbynoe@gmail.com" class="contact-link">
+      <<a href="/cdn-cgi/l/email-protection#91fdfee7f4f0fff5f2e3f0f7e5e2f3e8fffef4d1f6fcf0f8fdbff2fefc" class="contact-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-        loveandcraftsbynoe@gmail.com
+        <span class="__cf_email__" data-cfemail="1e7271687b7f707a7d6c7f786a6d7c6770717b5e79737f7772307d7173">[email&#160;protected]</span>
       </a>
       <a href="https://www.facebook.com/profile.php?id=61584345036742" target="_blank" class="contact-link">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
@@ -874,7 +881,7 @@
   <div class="music-bars" id="musicBars"><span></span><span></span><span></span><span></span></div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
   /* Navigation Scroll Shadow */
   const nav = document.getElementById('mainNav');
   window.addEventListener('scroll', () => {
@@ -931,60 +938,50 @@
   document.addEventListener('click',function once(){if(!playing)startPlay();document.removeEventListener('click',once);},{once:true});
   toggle.addEventListener('click',e=>{e.stopPropagation();if(playing){audio.pause();playing=false;bars.classList.add('paused');status.textContent='Paused';}else{startPlay();}});
 
-/* 3D Card Tilt Effect */
-  document.querySelectorAll('.port-card, .pricing-card, .team-card').forEach(card => {
-    card.addEventListener('mousemove', (e) => {
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      
-      // Calculate rotation based on mouse position (max 8 degrees of tilt)
-      const rotateX = ((y - centerY) / centerY) * -8; 
-      const rotateY = ((x - centerX) / centerX) * 8;
-      
-      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-      card.style.transition = 'transform 0.1s ease-out'; // Fast response while moving
+/* 3D Card Tilt Effect — desktop only */
+  const isTouch = window.matchMedia('(hover: none)').matches;
+  if (!isTouch) {
+    document.querySelectorAll('.port-card, .pricing-card, .team-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -8;
+        const rotateY = ((x - centerX) / centerX) * 8;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+        card.style.transition = 'transform 0.1s ease-out';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+        card.style.transition = 'transform 0.5s var(--ease-out)';
+      });
     });
-    
-    card.addEventListener('mouseleave', () => {
-      card.style.transform = ''; // Snaps back to original CSS state
-      card.style.transition = 'transform 0.5s var(--ease-out)'; // Smooth snap back
+
+    /* Magnetic Button Effect — desktop only */
+    document.querySelectorAll('.btn').forEach(btn => {
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = (e.clientX - rect.left - rect.width / 2) * 0.3;
+        const y = (e.clientY - rect.top - rect.height / 2) * 0.3;
+        btn.style.transform = `translate(${x}px, ${y}px)`;
+        btn.style.transition = 'transform 0.1s ease-out';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = '';
+        btn.style.transition = 'transform 0.4s var(--ease-out)';
+      });
     });
-  });
 
-  /* Magnetic Button Effect */
-  document.querySelectorAll('.btn').forEach(btn => {
-    btn.addEventListener('mousemove', (e) => {
-      const rect = btn.getBoundingClientRect();
-      // Calculate distance from the center of the button
-      const x = (e.clientX - rect.left - rect.width / 2) * 0.3; // 0.3 is the magnetic strength
-      const y = (e.clientY - rect.top - rect.height / 2) * 0.3;
-      
-      btn.style.transform = `translate(${x}px, ${y}px)`;
-      btn.style.transition = 'transform 0.1s ease-out';
+    /* Custom cursor — desktop only */
+    const cursor = document.createElement('div');
+    cursor.id = 'custom-cursor';
+    document.body.appendChild(cursor);
+    document.addEventListener('mousemove', (e) => {
+      cursor.style.left = e.clientX - 10 + 'px';
+      cursor.style.top = e.clientY - 10 + 'px';
     });
-    
-    btn.addEventListener('mouseleave', () => {
-      btn.style.transform = ''; // Removes inline style, returning to CSS hover states
-      btn.style.transition = 'transform 0.4s var(--ease-out)';
-    });
-  });
+  }
 
-  const cursor = document.createElement('div');
-  cursor.id = 'custom-cursor';
-  document.body.appendChild(cursor);
-
-  document.addEventListener('mousemove', (e) => {
-    cursor.style.left = e.clientX - 10 + 'px';
-    cursor.style.top = e.clientY - 10 + 'px';
-  });
-
-  document.querySelectorAll('a, button, .btn').forEach(el => {
-    el.addEventListener('mouseenter', () => cursor.style.transform = 'scale(3)');
-    el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
-  });
-</script>
-</body>
-</html>
+  d
