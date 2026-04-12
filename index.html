@@ -245,7 +245,8 @@
     audio { display:none; }
 
     /* REVEAL CLASSES */
-    .reveal { opacity:0; transform:translateY(40px); transition:opacity 0.8s var(--ease-smooth), transform 0.8s var(--ease-smooth); }
+    .reveal { opacity:1; transform:translateY(0); transition:opacity 0.8s var(--ease-smooth), transform 0.8s var(--ease-smooth); }
+    .js-loaded .reveal { opacity:0; transform:translateY(40px); }
     .reveal.visible { opacity:1; transform:translateY(0); }
 
     /* RESPONSIVE */
@@ -855,7 +856,7 @@
     <h2 class="reveal">Ready to Create <em>Something Beautiful?</em></h2>
     <p class="sub reveal">Let's craft your perfect digital invitation — reach out and let's talk.</p>
     <div class="contact-links reveal">
-      <<a href="/cdn-cgi/l/email-protection#91fdfee7f4f0fff5f2e3f0f7e5e2f3e8fffef4d1f6fcf0f8fdbff2fefc" class="contact-link">
+      <a href="/cdn-cgi/l/email-protection#91fdfee7f4f0fff5f2e3f0f7e5e2f3e8fffef4d1f6fcf0f8fdbff2fefc" class="contact-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
         <span class="__cf_email__" data-cfemail="1e7271687b7f707a7d6c7f786a6d7c6770717b5e79737f7772307d7173">[email&#160;protected]</span>
       </a>
@@ -898,10 +899,12 @@
   nl.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');nl.classList.remove('open');}));
 
   /* Enhanced Staggered Reveal */
+  document.body.classList.add('js-loaded');
+
   const observerOptions = {
     root: null,
-    rootMargin: '0px',
-    threshold: 0.1
+    rootMargin: '0px 0px -40px 0px',
+    threshold: 0.05
   };
   
   let delayCounter = 0;
@@ -983,5 +986,3 @@
       cursor.style.top = e.clientY - 10 + 'px';
     });
   }
-
-  d
