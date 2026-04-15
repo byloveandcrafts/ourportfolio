@@ -316,17 +316,31 @@
       /* GLASS NOTE — hide on mobile to prevent overlap */
       .glass-note { display:none; }
 
-      /* WISHES / REVIEWS */
-      .wishes-tabs { max-width:100%; }
-      .wishes-tab { font-size:.62rem; padding:9px 10px; letter-spacing:1px; }
-      .msg-strip { padding:1.4rem 1.2rem; }
+      /* WISHES / REVIEWS section */
+      .wishes-section { padding: 50px 0; }
+      .wishes-tabs { max-width: 100%; margin-bottom: 1rem; }
+      .wishes-tab { font-size: .62rem; padding: 9px 8px; letter-spacing: .8px; }
+      .wishes-form-wrap { padding: 1.6rem 1.2rem 1.8rem; border-radius: 18px; }
+      .wishes-input, .wishes-textarea { font-size: .84rem; padding: 11px 16px; }
+
+      /* STRIPS — full-width single card on mobile */
+      #viewPanel { max-width: 100%; }
+      .strips-viewport { overflow: hidden; }
+      .msg-strip {
+        flex: 0 0 calc(100vw - 2rem);
+        min-width: calc(100vw - 2rem);
+        max-width: 100%;
+        padding: 1.4rem 1.2rem;
+      }
+      .strips-track { gap: .8rem; }
+      .strip-arrow { width: 34px; height: 34px; font-size: .9rem; }
 
       /* CERT CARD */
-      .cert-grid { max-width:100%; }
-      .cert-thumb { height:200px; }
+      .cert-grid { max-width: 100%; }
+      .cert-thumb { height: 200px; }
 
       /* BLOB — shrink on mobile so it doesn't push layout */
-      .blob { width:260px; height:260px; top:-60px; left:-60px; }
+      .blob { width: 260px; height: 260px; top: -60px; left: -60px; }
     }
 
     /* PRICING & PACKAGES */
@@ -1458,51 +1472,81 @@
   let stripsAutoTimer = null;
   let isDragging = false, dragStartX = 0, dragCurrentX = 0;
 
+  // Cache so switching tabs never re-fetches
+  let _cachedData = null;
+  let _fetchPromise = null;
+
   function updateWishCount(n) {
     wishesCountNum = n;
     const el = document.getElementById('wishesCount');
     if (el) el.textContent = '· ' + n + ' Message' + (n === 1 ? '' : 's') + ' Shared';
   }
 
+  // Fetch with a 6-second timeout so it never hangs forever
+  function fetchWithTimeout(url, ms = 6000) {
+    return Promise.race([
+      fetch(url),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+    ]);
+  }
+
+  // Single shared fetch — called once on page load and reused on tab switch
+  function prefetchWishes() {
+    if (_fetchPromise) return _fetchPromise;
+    _fetchPromise = fetchWithTimeout(APPS_SCRIPT_URL + '?action=get')
+      .then(r => r.json())
+      .then(data => {
+        _cachedData = (data.messages || []).filter(m =>
+          m.name && String(m.name).trim() !== '' &&
+          m.message && String(m.message).trim() !== '' &&
+          String(m.message).toLowerCase() !== 'undefined' &&
+          String(m.name).toLowerCase() !== 'undefined'
+        );
+        updateWishCount(_cachedData.length);
+        return _cachedData;
+      })
+      .catch(() => {
+        _cachedData = [];
+        return [];
+      });
+    return _fetchPromise;
+  }
+
   async function loadWishes() {
-    const loading  = document.getElementById('stripsLoading');
-    const viewport = document.getElementById('stripsViewport');
-    const empty    = document.getElementById('stripsEmpty');
+    const loading   = document.getElementById('stripsLoading');
+    const viewport  = document.getElementById('stripsViewport');
+    const empty     = document.getElementById('stripsEmpty');
     const stripsNav = document.getElementById('stripsNav');
 
-    loading.style.display = 'block';
-    viewport.style.display = 'none';
-    empty.style.display = 'none';
-    stripsNav.style.display = 'none';
-
-    try {
-      // For reading we need real CORS — Apps Script must return the header
-      const res  = await fetch(APPS_SCRIPT_URL + '?action=get');
-      const data = await res.json();
-      // Filter out ghost rows — empty name AND empty message (e.g. leftover header row)
-      stripsData = (data.messages || []).filter(m =>
-        m.name && String(m.name).trim() !== '' &&
-        m.message && String(m.message).trim() !== '' &&
-        String(m.message).toLowerCase() !== 'undefined' &&
-        String(m.name).toLowerCase() !== 'undefined'
-      );
-      updateWishCount(stripsData.length);
-      loading.style.display = 'none';
-
-      if (stripsData.length === 0) { empty.style.display = 'block'; return; }
-
-      renderStrips(stripsData);
-      viewport.style.display = 'block';
-      stripsNav.style.display = 'flex';
-      buildDots();
-      stripsPos = 0;
-      updateStrips();
-      // Auto-scroll only when there are 5 or more messages
-      if (stripsData.length >= 5) startAutoScroll();
-      initDragSwipe();
-    } catch (err) {
-      loading.textContent = 'Could not load messages. Make sure your Apps Script is deployed correctly.';
+    // If we already have cached data, render instantly — no spinner
+    if (_cachedData !== null) {
+      stripsData = _cachedData;
+    } else {
+      loading.style.display = 'block';
+      viewport.style.display = 'none';
+      empty.style.display = 'none';
+      stripsNav.style.display = 'none';
+      try {
+        stripsData = await prefetchWishes();
+      } catch (_) {
+        loading.textContent = 'Could not load messages.';
+        return;
+      }
     }
+
+    loading.style.display = 'none';
+    updateWishCount(stripsData.length);
+
+    if (stripsData.length === 0) { empty.style.display = 'block'; return; }
+
+    renderStrips(stripsData);
+    viewport.style.display = 'block';
+    stripsNav.style.display = 'flex';
+    buildDots();
+    stripsPos = 0;
+    updateStrips();
+    if (stripsData.length >= 5) startAutoScroll();
+    initDragSwipe();
   }
 
   function renderStrips(messages) {
@@ -1531,18 +1575,17 @@
   }
 
   function getVisibleCount() {
-    const vp = document.getElementById('stripsViewport');
-    if (!vp) return 3;
-    const w = vp.offsetWidth;
-    if (w < 480) return 1;
-    if (w < 700) return 2;
+    const w = window.innerWidth;
+    if (w < 600) return 1;
+    if (w < 780) return 2;
     return 3;
   }
 
   function getStripWidth() {
     const first = document.querySelector('.msg-strip');
-    if (!first) return 238;
-    return first.offsetWidth + 18;
+    if (!first) return 258;
+    const gap = 18; // matches .strips-track gap (1.1rem ≈ 17.6px)
+    return first.getBoundingClientRect().width + gap;
   }
 
   function maxPos() {
@@ -1608,14 +1651,8 @@
     vp.addEventListener('touchend',   () => onEnd());
   }
 
-  /* Load message count on page load */
-  (async () => {
-    try {
-      const res  = await fetch(APPS_SCRIPT_URL + '?action=get');
-      const data = await res.json();
-      updateWishCount((data.messages || []).length);
-    } catch (_) {}
-  })();
+  /* Prefetch message count silently on page load so Reviews tab loads instantly */
+  prefetchWishes();
 
 </script>
 </body>
